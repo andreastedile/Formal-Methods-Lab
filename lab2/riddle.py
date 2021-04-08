@@ -1,7 +1,11 @@
+from pysat.formula import CNF
+from pysat.solvers import Glucose3
+
 index = 1
 n_clauses = 0
 map_var = dict()
 output_file = open("riddle.cnf", "w")
+cnf = CNF()
 
 
 def mapping(varlist):
@@ -16,6 +20,8 @@ def dnf_list(l1, l2):
     for var1 in l1:
         for var2 in l2:
             output_file.write("{} {} 0\n".format(map_var[var1], map_var[var2]))
+            clause = [map_var[var1], map_var[var2]]
+            cnf.append(clause)
             n_clauses = n_clauses + 1
 
 
@@ -23,6 +29,8 @@ def negation(var):
     global n_clauses
     output_file.write("-{} 0\n".format(map_var[var]))
     n_clauses = n_clauses + 1
+    clause = CNF(from_clauses=[[map_var[var]]]).negate().clauses[0]
+    cnf.append(clause)
 
 
 def or_list(varlist):
@@ -31,6 +39,8 @@ def or_list(varlist):
         output_file.write("{} ".format(map_var[var]))
     output_file.write("0\n")
     n_clauses = n_clauses + 1
+    clause = [map_var[var] for var in varlist]
+    cnf.append(clause)
 
 
 def neg_or_list(varlist):
@@ -39,6 +49,8 @@ def neg_or_list(varlist):
         output_file.write("-{} ".format(map_var[var]))
     output_file.write("0\n")
     n_clauses = n_clauses + 1
+    clause = [CNF(from_clauses=[[map_var[var]]]).negate().clauses[0][0] for var in varlist]
+    cnf.append(clause)
 
 
 def at_most_one(varlist):
@@ -47,6 +59,9 @@ def at_most_one(varlist):
         for j in range(i + 1, len(varlist)):
             output_file.write("-{} -{} 0\n".format(map_var[varlist[i]], map_var[varlist[j]]))
             n_clauses = n_clauses + 1
+            clause = [CNF(from_clauses=[[map_var[varlist[i]]]]).negate().clauses[0][0],
+                      CNF(from_clauses=[[map_var[varlist[j]]]]).negate().clauses[0][0]]
+            cnf.append(clause)
 
 
 def exactly_one(varlist):
@@ -98,3 +113,7 @@ for job in ["c", "g", "s", "m"]:
     exactly_one(list_days)
 
 output_file.write("c Add this problem line: p cnf {} {}".format(index, n_clauses))
+g = Glucose3(bootstrap_with=cnf.clauses)
+print(cnf)
+g.solve()
+print(g.get_model())
