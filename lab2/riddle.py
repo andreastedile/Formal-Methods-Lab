@@ -1,71 +1,35 @@
-from pysat.formula import CNF
+from pysat.formula import CNF, IDPool
 from pysat.solvers import Glucose3
 
-index = 1
-n_clauses = 0
-map_var = dict()
-output_file = open("riddle.cnf", "w")
+map_var = IDPool()
 cnf = CNF()
 
 
-def mapping(varlist):
-    global index
-    for var in varlist:
-        map_var[var] = index
-        index = index + 1
-
-
 def dnf_list(l1, l2):
-    global n_clauses
     for var1 in l1:
         for var2 in l2:
-            output_file.write("{} {} 0\n".format(map_var[var1], map_var[var2]))
-            clause = [map_var[var1], map_var[var2]]
+            clause = [map_var.id(var1), map_var.id(var2)]
             cnf.append(clause)
-            n_clauses = n_clauses + 1
 
 
 def negation(var):
-    global n_clauses
-    output_file.write("-{} 0\n".format(map_var[var]))
-    n_clauses = n_clauses + 1
-    clause = CNF(from_clauses=[[map_var[var]]]).negate().clauses[0]
-    cnf.append(clause)
-
-
-def negated(var):
-    mapped = map_var[var]
-    clause = CNF(from_clauses=[[mapped]]).negate().clauses[0]  # unit size clause
-    return clause[0]
+    cnf.append([-map_var.id(var)])
 
 
 def or_list(varlist):
-    global n_clauses
-    for var in varlist:
-        output_file.write("{} ".format(map_var[var]))
-    output_file.write("0\n")
-    n_clauses = n_clauses + 1
-    clause = [map_var[var] for var in varlist]
+    clause = [map_var.id(var) for var in varlist]
     cnf.append(clause)
 
 
 def neg_or_list(varlist):
-    global n_clauses
-    for var in varlist:
-        output_file.write("-{} ".format(map_var[var]))
-    output_file.write("0\n")
-    n_clauses = n_clauses + 1
-    clause = [negated(var) for var in varlist]
+    clause = [-map_var.id(var) for var in varlist]
     cnf.append(clause)
 
 
 def at_most_one(varlist):
-    global n_clauses
     for i in range(0, len(varlist)):
         for j in range(i + 1, len(varlist)):
-            output_file.write("-{} -{} 0\n".format(map_var[varlist[i]], map_var[varlist[j]]))
-            n_clauses = n_clauses + 1
-            clause = [negated(varlist[i]), negated(varlist[j])]
+            clause = [-map_var.id(varlist[i]), -map_var.id(varlist[j])]
             cnf.append(clause)
 
 
@@ -77,11 +41,9 @@ def exactly_one(varlist):
 
 
 # Mapping
-variables = list()
 for i in range(0, 4):
     for j in ["c", "g", "s", "m", "A", "L", "S", "I"]:
-        variables.append("x{}{}".format(i, j))
-mapping(variables)
+        map_var.id("x{}{}".format(i, j))
 
 # Clue 1
 dnf_list(["x0A", "x2c"], ["x1A", "x3c"])
@@ -117,7 +79,8 @@ for job in ["c", "g", "s", "m"]:
         list_days.append("x{}{}".format(day, job))
     exactly_one(list_days)
 
-output_file.write("c Add this problem line: p cnf {} {}".format(index, n_clauses))
+cnf.to_file('riddle.cnf')
+
 g = Glucose3(bootstrap_with=cnf.clauses)
 g.solve()
 model = g.get_model()
