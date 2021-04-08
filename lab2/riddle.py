@@ -33,6 +33,12 @@ def negation(var):
     cnf.append(clause)
 
 
+def negated(var):
+    mapped = map_var[var]
+    clause = CNF(from_clauses=[[mapped]]).negate().clauses[0]  # unit size clause
+    return clause[0]
+
+
 def or_list(varlist):
     global n_clauses
     for var in varlist:
@@ -49,7 +55,7 @@ def neg_or_list(varlist):
         output_file.write("-{} ".format(map_var[var]))
     output_file.write("0\n")
     n_clauses = n_clauses + 1
-    clause = [CNF(from_clauses=[[map_var[var]]]).negate().clauses[0][0] for var in varlist]
+    clause = [negated(var) for var in varlist]
     cnf.append(clause)
 
 
@@ -59,8 +65,7 @@ def at_most_one(varlist):
         for j in range(i + 1, len(varlist)):
             output_file.write("-{} -{} 0\n".format(map_var[varlist[i]], map_var[varlist[j]]))
             n_clauses = n_clauses + 1
-            clause = [CNF(from_clauses=[[map_var[varlist[i]]]]).negate().clauses[0][0],
-                      CNF(from_clauses=[[map_var[varlist[j]]]]).negate().clauses[0][0]]
+            clause = [negated(varlist[i]), negated(varlist[j])]
             cnf.append(clause)
 
 
