@@ -65,7 +65,7 @@ for i in range(1, 10):
             varlist.append("x{}{}{}".format(i, j, k))
         exactly_one(varlist)
 
-# Each colums
+# Each columns
 for j in range(1, 10):
     for k in range(1, 10):
         varlist = list()
@@ -88,6 +88,14 @@ for k in range(1, 10):
             varlist.append("x{}{}{}".format(i + 2, j + 2, k))
             exactly_one(varlist)
 
-and_list(["x149", "x171", ""])
+and_list(["x149", "x171",
+          "x283", "x295",
+          "x338", "x357",
+          "x455", "x479",
+          "x511", "x534", "x543", "x572",
+          "x627", "x669", "x693",
+          "x735", "x752", "x767",
+          "x824", "x839", "x878",
+          "x917", "x941", "x982"])
 
 output_file.write("c Add this problem line: p cnf {} {}".format(index, n_clauses))
