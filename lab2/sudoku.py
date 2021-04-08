@@ -1,45 +1,31 @@
-index = 1
-n_clauses = 0
-map_var = dict()
-output_file = open("sudoku.cnf", "w")
+from pysat.formula import CNF, IDPool
+from pysat.solvers import Glucose3
 
-
-def mapping(varlist):
-    global index
-    for var in varlist:
-        map_var[var] = index
-        index = index + 1
+map_var = IDPool()
+cnf = CNF()
 
 
 def or_list(varlist):
-    global n_clauses
-    for var in varlist:
-        output_file.write("{} ".format(map_var[var]))
-    output_file.write("0\n")
-    n_clauses = n_clauses + 1
+    clause = [map_var.id(var) for var in varlist]
+    cnf.append(clause)
 
 
 def neg_or_list(varlist):
-    global n_clauses
-    for var in varlist:
-        output_file.write("-{} ".format(map_var[var]))
-    output_file.write("0\n")
-    n_clauses = n_clauses + 1
+    clause = [-map_var.id(var) for var in varlist]
+    cnf.append(clause)
 
 
 def at_most_one(varlist):
-    global n_clauses
     for i in range(0, len(varlist)):
         for j in range(i + 1, len(varlist)):
-            output_file.write("-{} -{} 0\n".format(map_var[varlist[i]], map_var[varlist[j]]))
-            n_clauses = n_clauses + 1
+            clause = [-map_var.id(varlist[i]), -map_var.id(varlist[j])]
+            cnf.append(clause)
 
 
 def and_list(varlist):
-    global n_clauses
     for var in varlist:
-        output_file.write("{} 0\n".format(map_var[var]))
-        n_clauses += 1
+        clause = [map_var.id(var)]
+        cnf.append(clause)
 
 
 def exactly_one(varlist):
@@ -49,13 +35,10 @@ def exactly_one(varlist):
     at_most_one(varlist)
 
 
-varlist = list()
 for i in range(1, 10):
     for j in range(1, 10):
         for k in range(1, 10):
-            varlist.append("x{}{}{}".format(i, j, k))
-
-mapping(varlist)
+            map_var.id("x{}{}{}".format(i, j, k))
 
 # Each row
 for i in range(1, 10):
@@ -98,4 +81,9 @@ and_list(["x149", "x171",
           "x824", "x839", "x878",
           "x917", "x941", "x982"])
 
-output_file.write("c Add this problem line: p cnf {} {}".format(index, n_clauses))
+cnf.to_file('sudoku.cnf')
+
+g = Glucose3(bootstrap_with=cnf.clauses)
+g.solve()
+model = g.get_model()
+print(model)
